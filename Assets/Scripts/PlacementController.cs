@@ -35,7 +35,11 @@ public class PlacementController : MonoBehaviour
 
   public void BeginDragFromPanel(ElementData data)
   {
-    if (GetRemaining(data.type) <= 0) return;
+    if (GetRemaining(data.type) <= 0)
+    {
+      Debug.Log("No remaining elements of type: " + data.type);
+      return;
+    }
 
     activeDragData = data;
     ghostElement = Instantiate(data.prefab).GetComponent<PlaceableElement>();

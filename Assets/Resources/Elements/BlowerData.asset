@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: BlowerData
   m_EditorClassIdentifier: Assembly-CSharp::ElementData
   type: 0
-  icon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  icon: {fileID: 1467659211151861967, guid: e8cb2f5e7cfb4c24ea4e2fe32e1d982e, type: 3}
   prefab: {fileID: 6578518146659640637, guid: a7f0efbecb45f7149bd155089599ef8a, type: 3}

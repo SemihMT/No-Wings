@@ -5,6 +5,7 @@ public enum GameState
   MainMenu,
   LevelSelect,
   Settings,
+  Intro,
   LevelEditing,
   Playing,
   Paused,

@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Cinemachine;
+using System;
 public class LevelController : MonoBehaviour
 {
   [Header("Prefabs")]
@@ -11,9 +12,16 @@ public class LevelController : MonoBehaviour
   [SerializeField] private PlacementController placementController;
   [SerializeField] private CinemachineCamera virtualCamera;
   [SerializeField] private CameraController cameraController;
+  [SerializeField] private TrailController trailController;
 
   private PlayerController playerController;
   private LevelData currentLevel;
+  private Goal goal;
+
+  void Awake()
+  {
+    GameManager.Instance.RegisterLevelController(this);
+  }
 
   void Start()
   {
@@ -23,6 +31,8 @@ public class LevelController : MonoBehaviour
   {
     if (playerController != null)
       playerController.OnPlayerLost -= HandlePlayerLost;
+    if (goal != null)
+      goal.OnGoalReached -= HandleGoalReached;
   }
   private void LoadLevel(int levelIndex)
   {
@@ -33,7 +43,6 @@ public class LevelController : MonoBehaviour
       Debug.LogError($"LevelData not found for index {levelIndex}");
       return;
     }
-
     SetupLevel();
   }
 
@@ -42,16 +51,13 @@ public class LevelController : MonoBehaviour
     // Spawn and position bird
     GameObject playerInstance = Instantiate(playerPrefab, currentLevel.birdStartPosition, Quaternion.identity);
     playerController = playerInstance.GetComponent<PlayerController>();
+    cameraController.SetFollowBird(false);
     playerController.OnPlayerLost += HandlePlayerLost;
+    trailController.SetPlayerController(playerController);
 
-    // Position goal
+    goal = goalTransform.GetComponent<Goal>();
+    goal.OnGoalReached += HandleGoalReached;
     goalTransform.position = currentLevel.goalPosition;
-
-    cameraController.PlayIntro(
-        playerInstance.transform,
-        goalTransform,
-        currentLevel.obstacles);
-
 
     // Spawn obstacles
     foreach (var obstacleData in currentLevel.obstacles)
@@ -60,6 +66,19 @@ public class LevelController : MonoBehaviour
     placementController.SetBudget(ElementType.Blower, currentLevel.blowerCount);
 
     // Notify game state
+    GameManager.Instance.GameStateController.SetState(GameState.LevelEditing);
+
+    cameraController.PlayIntro(
+       playerInstance.transform,
+       goalTransform,
+       currentLevel.obstacles);
+  }
+
+  public void RetryLevel()
+  {
+    cameraController.SetFollowBird(false);
+    playerController.ResetToPosition(currentLevel.birdStartPosition);
+    cameraController.ResetToGameplayPosition(playerController.transform);
     GameManager.Instance.GameStateController.SetState(GameState.LevelEditing);
   }
 
@@ -75,6 +94,10 @@ public class LevelController : MonoBehaviour
 
     Instantiate(prefab, data.position, Quaternion.Euler(0, 0, data.rotation));
   }
+  public void ClearElements()
+  {
+    placementController.ClearAll();
+  }
 
   private GameObject GetPrefabForType(ObstacleType type)
   {
@@ -87,13 +110,19 @@ public class LevelController : MonoBehaviour
 
   public void StartSimulation()
   {
-    virtualCamera.Follow = playerController.transform;
+    cameraController.SetFollowBird(true, playerController.transform);
     playerController.StartSimulation();
     GameManager.Instance.GameStateController.SetState(GameState.Playing);
   }
-
+  private void HandleGoalReached()
+  {
+    playerController.StopSimulation();
+    GameManager.Instance.GameStateController.SetState(GameState.LevelComplete);
+  }
   private void HandlePlayerLost()
   {
+    trailController.RecordDeath(playerController.Position);
+    playerController.StopSimulation();
     GameManager.Instance.GameStateController.SetState(GameState.GameOver);
   }
 

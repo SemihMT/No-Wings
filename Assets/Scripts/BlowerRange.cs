@@ -11,7 +11,6 @@ public class BlowerRange : MonoBehaviour
 
   void OnTriggerEnter2D(Collider2D other)
   {
-    Debug.Log($"Range trigger entered by: {other.gameObject.name}");
     Rigidbody2D rb = other.GetComponentInParent<Rigidbody2D>();
     if (rb != null) blowerElement.SetBirdRb(rb);
   }

@@ -6,7 +6,12 @@ public class CameraController : MonoBehaviour
 {
   [Header("References")]
   [SerializeField] private CinemachineCamera cinemachineCamera;
+  [SerializeField] private CinemachineConfiner2D cinemachineConfiner;
   [SerializeField] private Camera mainCamera;
+
+  [Header("Zoom Settings")]
+  [SerializeField] private float minZoom = 3f;
+  [SerializeField] private float maxZoom = 15f;
 
   [Header("Intro Timing")]
   [SerializeField] private float overviewDuration = 2f;
@@ -26,23 +31,50 @@ public class CameraController : MonoBehaviour
     cinemachineCamera.Follow = cameraTarget;
   }
 
+  private void InvalidateConfinerLensCache()
+  {
+    cinemachineConfiner.InvalidateLensCache();
+  }
+
   public void PlayIntro(Transform bird, Transform goal, ObstacleData[] obstacles)
   {
+    if (GameManager.Instance.HasPlayedIntro)
+    {
+      SkipToGameplay(bird);
+      return;
+    }
     StartCoroutine(IntroSequence(bird, goal, obstacles));
+  }
+  public void ResetToGameplayPosition(Transform bird)
+  {
+    Vector3 startPos = bird.position;
+    startPos.y = gameplayZoom;
+    startPos.z = 0f;
+    cameraTarget.position = startPos;
+    cinemachineCamera.Follow = cameraTarget;
+    cinemachineCamera.Lens.OrthographicSize = gameplayZoom;
+    cinemachineCamera.ForceCameraPosition(startPos, Quaternion.identity);
+    InvalidateConfinerLensCache();
+  }
+  private void SkipToGameplay(Transform bird)
+  {
+    ResetToGameplayPosition(bird);
+    GameManager.Instance.GameStateController.SetState(GameState.LevelEditing);
   }
 
   private IEnumerator IntroSequence(Transform bird, Transform goal, ObstacleData[] obstacles)
   {
-    Bounds bounds = CalculateLevelBounds(bird.position, goal.position, obstacles);
+    GameManager.Instance.GameStateController.SetState(GameState.Intro);
 
+    Bounds bounds = CalculateLevelBounds(bird.position, goal.position, obstacles);
     Vector3 overviewPos = bounds.center;
     overviewPos.z = 0f;
     float overviewSize = CalculateOrthographicSize(bounds);
 
-    // Teleport target and lens, then force Cinemachine to snap immediately
     cameraTarget.position = overviewPos;
     cinemachineCamera.Lens.OrthographicSize = overviewSize;
     cinemachineCamera.ForceCameraPosition(overviewPos, Quaternion.identity);
+    InvalidateConfinerLensCache();
 
     yield return new WaitForSeconds(overviewDuration);
 
@@ -56,6 +88,8 @@ public class CameraController : MonoBehaviour
     launchPos.y = gameplayZoom;
     yield return MoveCamera(launchPos, gameplayZoom, returnDuration);
 
+    GameManager.Instance.HasPlayedIntro = true;
+    GameManager.Instance.GameStateController.SetState(GameState.LevelEditing);
   }
 
   private IEnumerator MoveCamera(Vector3 targetPos, float targetZoom, float duration)
@@ -64,7 +98,6 @@ public class CameraController : MonoBehaviour
     startPos.z = 0f;
     targetPos.z = 0f;
 
-    // Read from Cinemachine lens, not mainCamera
     float startZoom = cinemachineCamera.Lens.OrthographicSize;
     float elapsed = 0f;
 
@@ -74,15 +107,15 @@ public class CameraController : MonoBehaviour
       float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
 
       cameraTarget.position = Vector3.Lerp(startPos, targetPos, t);
-      cinemachineCamera.Lens.OrthographicSize = Mathf.Lerp(startZoom, targetZoom, t); // Fix
+      cinemachineCamera.Lens.OrthographicSize = Mathf.Lerp(startZoom, targetZoom, t);
+      InvalidateConfinerLensCache();
 
       yield return null;
     }
 
     cameraTarget.position = targetPos;
     cinemachineCamera.Lens.OrthographicSize = targetZoom;
-
-    Debug.Log($"Camera moved to {targetPos} with zoom {targetZoom}");
+    InvalidateConfinerLensCache();
   }
 
   private Bounds CalculateLevelBounds(Vector2 birdPos, Vector2 goalPos, ObstacleData[] obstacles)
@@ -101,4 +134,28 @@ public class CameraController : MonoBehaviour
     float horizontalSize = bounds.size.x / mainCamera.aspect * 0.5f;
     return Mathf.Max(verticalSize, horizontalSize);
   }
+
+  public void DragCamera(Vector2 worldDelta)
+  {
+    Vector3 newPosition = cameraTarget.position + new Vector3(worldDelta.x, worldDelta.y, 0f);
+
+    cameraTarget.position = newPosition;
+    //cinemachineCamera.ForceCameraPosition(cameraTarget.position, Quaternion.identity);
+  }
+  public void SetFollowBird(bool follow, Transform bird = null)
+  {
+    cinemachineCamera.Follow = follow ? bird : cameraTarget;
+  }
+
+  public void Zoom(float delta)
+  {
+    float newSize = Mathf.Clamp(
+        cinemachineCamera.Lens.OrthographicSize + delta,
+        minZoom,
+        maxZoom
+    );
+    cinemachineCamera.Lens.OrthographicSize = newSize;
+    InvalidateConfinerLensCache();
+  }
+
 }

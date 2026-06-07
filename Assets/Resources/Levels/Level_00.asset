@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c01dd025db83a3b438d662fe748e6947, type: 3}
   m_Name: Level_00
   m_EditorClassIdentifier: Assembly-CSharp::LevelData
-  birdStartPosition: {x: 3, y: 9}
-  goalPosition: {x: 12, y: 15}
-  blowerCount: 5
+  birdStartPosition: {x: -2.0056717, y: 6.8430595}
+  goalPosition: {x: 6.6577625, y: 1.6295309}
+  blowerCount: 1
   obstacles: []

@@ -26,6 +26,7 @@ public class LevelSelectUIManager : MonoBehaviour
   // Called by each level button, pass the level index from the inspector
   public void OnLevelSelected(int levelIndex)
   {
+    GameManager.Instance.HasPlayedIntro = false;
     GameManager.Instance.SelectedLevel = levelIndex;
     GameManager.Instance.SceneController.LoadGame();
   }

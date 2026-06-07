@@ -20,8 +20,14 @@ public class SceneController : MonoBehaviour
 
   private void LoadScene(string sceneName)
   {
+    Debug.Log($"Loading scene: {sceneName}");
     GameManager.Instance.GameStateController.SetState(GetStateForScene(sceneName));
+    Debug.Log($"Set game state to: {GameManager.Instance.GameStateController.CurrentState}");
     SceneManager.LoadScene(sceneName);
+  }
+  public void RetryGame()
+  {
+    GameManager.Instance.LevelController.RetryLevel();
   }
 
   private GameState GetStateForScene(string sceneName)

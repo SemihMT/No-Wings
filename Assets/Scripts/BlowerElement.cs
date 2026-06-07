@@ -8,6 +8,7 @@ public class BlowerElement : PlaceableElement
 
   public Vector3 BlowDirection => FacingDirection;
   public float BlowForce => blowForce;
+  public float BlowRange => range;
 
   private Rigidbody2D birdRb;
 

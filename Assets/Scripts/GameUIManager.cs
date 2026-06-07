@@ -47,6 +47,9 @@ public class GameUIManager : MonoBehaviour
       case GameState.LevelEditing:
         Show(levelEditingCanvas);
         break;
+      case GameState.Intro:
+        HideAll();
+        break;
       case GameState.Playing:
         Show(playingCanvas);
         break;
@@ -63,10 +66,8 @@ public class GameUIManager : MonoBehaviour
   }
 
   // LevelEditing buttons
-  public void OnSimulatePressed()
-  {
-    levelController.StartSimulation();
-  }
+  public void OnSimulatePressed() => levelController.StartSimulation();
+  public void OnClearPressed() => GameManager.Instance.LevelController.ClearElements();
 
   // Playing buttons
   public void OnPausePressed() =>
@@ -81,6 +82,7 @@ public class GameUIManager : MonoBehaviour
   // LevelComplete buttons
   public void OnNextLevelPressed()
   {
+    GameManager.Instance.HasPlayedIntro = false;
     GameManager.Instance.SelectedLevel++;
     GameManager.Instance.SceneController.LoadGame();
   }
@@ -89,7 +91,7 @@ public class GameUIManager : MonoBehaviour
 
   // GameOver buttons
   public void OnRetryPressed() =>
-      GameManager.Instance.SceneController.LoadGame();
+      GameManager.Instance.SceneController.RetryGame();
   public void OnGameOverQuitPressed() =>
       GameManager.Instance.SceneController.LoadLevelSelect();
 
